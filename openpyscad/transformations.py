@@ -5,7 +5,7 @@ __all__ = ['Translate', 'Rotate', 'Scale', 'Resize', 'Mirror', 'Color', 'Offset'
 
 
 class _Transformation(base.BaseObject):
-    pass
+	pass
 
 
 Transformation = _Transformation
@@ -13,54 +13,53 @@ Transformation = _Transformation
 
 # Transformations
 class Translate(_Transformation):
-    pass
+	pass
 
 
 class Rotate(_Transformation):
-    pass
+	pass
 
 
 class Scale(_Transformation):
-    pass
+	pass
 
 
 class Resize(_Transformation):
-    pass
+	pass
 
 
 class Mirror(_Transformation):
-    pass
+	pass
 
 
 class Color(_Transformation):
-    pass
+	pass
 
 
 class Offset(_Transformation):
-
-    def _validate_append(self, obj):
-        from .shapes_2d import Shape2dObject
-        if not isinstance(obj, Shape2dObject):
-            raise TypeError('Appended object must be a instance of Shape2dObject.')
+	def _validate_append(self, obj):
+		
+		if not isinstance(obj, base.BaseObject) or not obj._is_2d():
+			raise TypeError('Appended object must be a 2D shape.')
 
 
 class Hull(_Transformation):
-    pass
+	pass
 
 
 class Minkowski(_Transformation):
-    pass
+	pass
 
 
 class Linear_Extrude(_Transformation):
-    def _validate_append(self, obj):
+	def _validate_append(self, obj):
 
-        if not isinstance(obj, base.BaseObject) or not obj._is_2d():
-            raise TypeError('Appended object must be a 2D shape.')
+		if not isinstance(obj, base.BaseObject) or not obj._is_2d():
+			raise TypeError('Appended object must be a 2D shape.')
 
 
 class Rotate_Extrude(_Transformation):
-    def _validate_append(self, obj):
+	def _validate_append(self, obj):
 
-        if not isinstance(obj, base.BaseObject) or not obj._is_2d():
-            raise TypeError('Appended object must be a 2D shape.')
+		if not isinstance(obj, base.BaseObject) or not obj._is_2d():
+			raise TypeError('Appended object must be a 2D shape.')

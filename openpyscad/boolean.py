@@ -7,12 +7,12 @@ __all__ = ['Union', 'Difference', 'Intersection']
 
 
 class Union(base.BaseObject):
-    pass
+	pass
 
 
 class Difference(base.BaseObject):
-    pass
+	pass
 
 
 class Intersection(base.BaseObject):
-    pass
+	pass

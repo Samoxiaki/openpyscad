@@ -7,24 +7,24 @@ __all__ = ['Sphere', 'Cube', 'Cylinder', 'Polyhedron', 'Surface']
 
 # 3D
 class _Shape3dObject(_BaseObject):
-    pass
+	pass
 
 
 class Sphere(_Shape3dObject):
-    pass
+	pass
 
 
 class Cube(_Shape3dObject):
-    pass
+	pass
 
 
 class Cylinder(_Shape3dObject):
-    pass
+	pass
 
 
 class Polyhedron(_Shape3dObject):
-    pass
+	pass
 
 
 class Surface(_Shape3dObject):
-    pass
+	pass

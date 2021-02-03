@@ -87,7 +87,10 @@ class ModifierMixin(object):
 	# Shorthand
 	def disable(self):
 		return self.turn_on_disable()
-
+	
+	def enable(self):
+		return self.turn_off_disable()
+	
 	def show_only(self):
 		return self.turn_on_show_only()
 
@@ -96,3 +99,6 @@ class ModifierMixin(object):
 
 	def transparent(self):
 		return self.turn_on_transparent()
+
+	def opaque(self):
+		return self.turn_off_transparent()

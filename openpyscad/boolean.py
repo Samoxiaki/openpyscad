@@ -16,3 +16,4 @@ class Difference(base.BaseObject):
 
 class Intersection(base.BaseObject):
 	pass
+

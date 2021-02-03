@@ -6,8 +6,10 @@ from .base import *  # noqa: F401,F403
 from .shapes_3d import *  # noqa: F401,F403
 from .shapes_2d import *  # noqa: F401,F403
 from .boolean import *  # noqa: F401,F403
+from .util import *  # noqa: F401,F403
 from .transformations import *  # noqa: F401,F403
 from .custom2dshapes import Custom2dShapes  # noqa: F401,F403
+from .ops_math import * # noqa: F401,F403
 
 __name__ = 'OpenPySCAD'
 __version__ = '0.3.2'

@@ -55,7 +55,9 @@ class MetaObject(type):
 		'surface': ('surface', ('file', 'center', 'invert', 'convexity'), False),
 		'polyhedron': ('polyhedron',
 					   ('points', 'triangles', 'faces', 'convexity'),
-					   False)
+					   False),
+		# Util
+		'workspace': ('union', (), True), # Workspace behaves like "union".
 	}
 
 	def __new__(mcs, name, bases, attr):
@@ -77,7 +79,6 @@ class _BaseObject(with_metaclass(MetaObject, ModifierMixin, object)):
 		for k, v in kwargs.items():
 			if hasattr(self.__class__, k):
 				setattr(self, k, v)
-
 		if len(args) > 0:
 			for i, k in enumerate(args):
 				setattr(self, self._properties[i], args[i])
@@ -241,10 +242,11 @@ class _BaseObject(with_metaclass(MetaObject, ModifierMixin, object)):
 
 	def __add__(self, other):
 		from .boolean import Union
+		from .util import Workspace
 		if isinstance(self, _Empty):
 			return other.clone()
 
-		elif isinstance(self, Union):
+		elif isinstance(self, (Union, Workspace)):
 			cloned = self.clone()
 			cloned.append(other)
 			return cloned
@@ -296,6 +298,7 @@ class _BaseObject(with_metaclass(MetaObject, ModifierMixin, object)):
 		return Mirror(*args, **kwargs).append(self)
 
 	def color(self, *args, **kwargs):
+		# TODO: Validate color input
 		from .transformations import Color
 		return Color(*args, **kwargs).append(self)
 

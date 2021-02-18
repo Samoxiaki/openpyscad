@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-
-
 from .modifiers import *  # noqa: F401,F403
 from .base import *  # noqa: F401,F403
 from .shapes_3d import *  # noqa: F401,F403

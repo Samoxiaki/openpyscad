@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
-
-
-class Modifier(object):
+class Modifier:
 
     def __init__(self):
         self.is_disable = False
@@ -46,7 +43,7 @@ class Modifier(object):
         return prefix
 
 
-class ModifierMixin(object):
+class ModifierMixin:
 
     def __init__(self):
         super(ModifierMixin, self).__init__()

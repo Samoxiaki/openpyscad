@@ -1,7 +1,7 @@
 import openpyscad as ops
 
 
-class Custom3dShapes(object):
+class Custom3dShapes:
 
     @staticmethod
     def dice(edge=15, fn=32):

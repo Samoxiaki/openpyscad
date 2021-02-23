@@ -1,26 +1,62 @@
 import math
-from decimal import Decimal
+from decimal import Decimal, localcontext, ROUND_HALF_UP
 import copy
 from abc import ABCMeta, abstractmethod
 from .util import Validator
+from functools import wraps
 
 
 __all__ = ["OpsMath", "MathPoint", "MathVector", "MathLine"]
 
-# 卐卐卐卐卐卐卐卐卐 begin
+# 卐卐卐卐卐卐卐卐卐 begin (Methods to operate with Decimal values)
+
+__PRECISSION = 48
+__ROUND_PRECISSION = 6
+__REL_TOLERANCE = 1e-12
+
+def decimal_cast(value):
+	return Decimal(str(value))
+
+def precise_method(func):
+	@wraps(func)
+	def rfunc(*args, **kwargs):
+		global __PRECISSION
+		with localcontext() as ctx:
+			ctx.prec = __PRECISSION
+			ctx.rounding = ROUND_HALF_UP
+			return func(*args, **kwargs)
+	return rfunc
+		
 # Operate as Decimal, return a float
+@precise_method
 def decimal_add(value_a, value_b):
-	return float(Decimal(str(value_a)) + Decimal(str(value_b)))
+	return float(decimal_cast(value_a) + decimal_cast(value_b))
 
+@precise_method
 def decimal_sub(value_a, value_b):
-	return float(Decimal(str(value_a)) - Decimal(str(value_b)))
+	return float(decimal_cast(value_a) - decimal_cast(value_b))
 	
+@precise_method
 def decimal_mul(value_a, value_b):
-	return float(Decimal(str(value_a)) * Decimal(str(value_b))) 
+	return float(decimal_cast(value_a) * decimal_cast(value_b))
 	
+@precise_method
 def decimal_div(value_a, value_b):
-	return float(Decimal(str(value_a)) / Decimal(str(value_b))) 
+	return float(decimal_cast(value_a) / decimal_cast(value_b))
 
+@precise_method
+def decimal_pow(value_a, value_b):
+	return float(decimal_cast(value_a) ** decimal_cast(value_b))
+	
+@precise_method
+def decimal_aproximate(value):
+	global __REL_TOLERANCE, __ROUND_PRECISSION
+	rounded_value = round(value, __ROUND_PRECISSION)
+	if(math.isclose(rounded_value, value, rel_tol=__REL_TOLERANCE)):
+		return Decimal(rounded_value)
+	else:
+		return decimal_cast(value)
+	
 # 卐卐卐卐卐卐卐卐卐 end
 
 class OpsMath:
@@ -29,62 +65,62 @@ class OpsMath:
 	"""
 	
 	__cos_degrees = {
-		0:		1.0,
-		30: 	math.sqrt(3)/2,
-		45:		math.sqrt(2)/2,
-		60:		0.5,
-		90:		0.0,
-		120:	-0.5,
-		135:	-math.sqrt(2)/2,
-		150:	-math.sqrt(3)/2,
-		180:	-1.0,
-		210:	-math.sqrt(3)/2,
-		225:	-math.sqrt(2)/2,
-		240:	-0.5,
-		270:	0.0,
-		300:	0.5,
-		315:	math.sqrt(2)/2,
-		330:	math.sqrt(3)/2,
-		360:	1.0
+		0:		Decimal(1),
+		30: 	Decimal(3).sqrt()/Decimal(2),
+		45:		Decimal(2).sqrt()/Decimal(2),
+		60:		Decimal(0.5),
+		90:		Decimal(0),
+		120:	Decimal(-0.5),
+		135:	-Decimal(2).sqrt()/Decimal(2),
+		150:	-Decimal(3).sqrt()/Decimal(2),
+		180:	Decimal(-1),
+		210:	-Decimal(3).sqrt()/Decimal(2),
+		225:	-Decimal(2).sqrt()/Decimal(2),
+		240:	Decimal(-0.5),
+		270:	Decimal(0),
+		300:	Decimal(0.5),
+		315:	Decimal(2).sqrt()/Decimal(2),
+		330:	Decimal(3).sqrt()/Decimal(2),
+		360:	Decimal(1)
 	}
 	__sin_degrees = {
-		0:		0.0,
-		30: 	0.5,
-		45:		math.sqrt(2)/2,
-		60:		math.sqrt(3)/2,
-		90:		1.0,
-		120:	math.sqrt(3)/2,
-		135:	math.sqrt(2)/2,
-		150:	0.5,
-		180:	0.0,
-		210:	-0.5,
-		225:	-math.sqrt(2)/2,
-		240:	-math.sqrt(3)/2,
-		270:	-1.0,
-		300:	-math.sqrt(3)/2,
-		315:	-math.sqrt(2)/2,
-		330:	-0.5,
-		360:	0.0
+		0:		Decimal(0),
+		30: 	Decimal(0.5),
+		45:		Decimal(2).sqrt()/Decimal(2),
+		60:		Decimal(3).sqrt()/Decimal(2),
+		90:		Decimal(1),
+		120:	Decimal(3).sqrt()/Decimal(2),
+		135:	Decimal(2).sqrt()/Decimal(2),
+		150:	Decimal(0.5),
+		180:	Decimal(0),
+		210:	Decimal(-0.5),
+		225:	-Decimal(2).sqrt()/Decimal(2),
+		240:	-Decimal(3).sqrt()/Decimal(2),
+		270:	Decimal(-1),
+		300:	-Decimal(3).sqrt()/Decimal(2),
+		315:	-Decimal(2).sqrt()/Decimal(2),
+		330:	Decimal(-0.5),
+		360:	Decimal(0)
 	}
 	
 	__tan_degrees = {
-		0:		0.0,
-		30: 	1/math.sqrt(3),
-		45:		1.0,
-		60:		math.sqrt(3),
-		90:		math.inf,
-		120:	-math.sqrt(3),
-		135:	-1,
-		150:	-1/math.sqrt(3),
-		180:	0.0,
-		210:	1/math.sqrt(3),
-		225:	1,
-		240:	math.sqrt(3),
-		270:	math.inf,
-		300:	-math.sqrt(3),
-		315:	-1.0,
-		330:	-1/math.sqrt(3),
-		360:	0.0
+		0:		Decimal(0),
+		30: 	Decimal(1)/Decimal(3).sqrt(),
+		45:		Decimal(1),
+		60:		Decimal(3).sqrt(),
+		90:		Decimal(math.inf),
+		120:	-Decimal(3).sqrt(),
+		135:	Decimal(-1),
+		150:	Decimal(-1)/Decimal(3).sqrt(),
+		180:	Decimal(0),
+		210:	Decimal(1)/Decimal(3).sqrt(),
+		225:	Decimal(1),
+		240:	Decimal(3).sqrt(),
+		270:	Decimal(math.inf),
+		300:	-Decimal(3).sqrt(),
+		315:	Decimal(-1),
+		330:	Decimal(-1)/Decimal(3).sqrt(),
+		360:	Decimal(0)
 	}
 	
 	@staticmethod
@@ -101,108 +137,196 @@ class OpsMath:
 		return None 
 	
 	@staticmethod
-	def acos(x):
+	@precise_method
+	def acos(x, as_decimal=False):
 		"""
 		Return the arc cosine (measured in degrees) of x.
 		"""
 		x_chk = OpsMath.__reverse_chk(x, OpsMath.__cos_degrees)
-		return x_chk if (x_chk is not None) else math.degrees(math.acos(x))
+		if(as_decimal):
+			return x_chk if (x_chk is not None) else OpsMath.degrees(decimal_cast(math.acos(x)), as_decimal=True)
+		else:
+			return float(x_chk) if (x_chk is not None) else OpsMath.degrees(decimal_cast(math.acos(x)))
 		
 	@staticmethod
-	def asin(x):
+	@precise_method
+	def asin(x, as_decimal=False):
 		"""
 		Return the arc sine (measured in degrees) of x.
 		"""
 		x_chk = OpsMath.__reverse_chk(x, OpsMath.__sin_degrees)
-		return x_chk if (x_chk is not None) else math.degrees(math.asin(x))
+		if(as_decimal):
+			return x_chk if (x_chk is not None) else OpsMath.degrees(decimal_cast(math.asin(x)), as_decimal=True)
+		else:
+			return float(x_chk) if (x_chk is not None) else OpsMath.degrees(decimal_cast(math.asin(x)))
 		
 	@staticmethod
-	def atan(x):
+	@precise_method
+	def atan(x, as_decimal=False):
 		"""
 		Return the arc tangent (measured in degrees) of x.
 		"""
 		x_chk = OpsMath.__reverse_chk(x, OpsMath.__tan_degrees)
-		return x_chk if (x_chk is not None) else math.degrees(math.atan(x))
+		if(as_decimal):
+			return x_chk if (x_chk is not None) else OpsMath.degrees(decimal_cast(math.atan(x)), as_decimal=True)
+		else:
+			return float(x_chk) if (x_chk is not None) else OpsMath.degrees(decimal_cast(math.atan(x)))
 		
 	@staticmethod	
-	def atan2(y, x):
+	@precise_method
+	def atan2(y, x, as_decimal=False):
 		"""
 		Return the arc tangent (measured in degrees) of y/x.
 			
 		Unlike atan(y/x), the signs of both x and y are considered.	
 		"""
-		res = math.degrees(math.atan2(y, x))
+		res = OpsMath.degrees(decimal_cast(math.atan2(x, y)), as_decimal=True)
 		for k in OpsMath.__tan_degrees.keys():
 			try:
 				if(math.isclose(k, res)):
-					return k
+					return k if(as_decimal) else float(k)
 				elif(math.isclose(-k, res)):
-					return -k
+					return -k if(as_decimal) else float(-k)
 			except:
-				return res
+				return res if(as_decimal) else float(res)
 				
-		return res
+		return res if(as_decimal) else float(res)
 	
 	@staticmethod
-	def cos(x):
+	@precise_method
+	def cos(x, as_decimal=False):
 		"""
 		Return the cosine of x (measured in degrees).
 		"""
 		x_chk = abs(x % 360)
-		return OpsMath.__cos_degrees.get(x_chk, math.cos(math.radians(x)))
+		res = OpsMath.__cos_degrees.get(x_chk, decimal_cast(math.cos(OpsMath.radians(x, as_decimal=True))))
+		return res if(as_decimal) else float(res)
 	
 	@staticmethod
-	def sin(x):
+	@precise_method
+	def sin(x, as_decimal=False):
 		"""
 		Return the sine of x (measured in degrees).
 		"""
 		x_chk = abs(x % 360)
-		return OpsMath.__sin_degrees.get(x_chk, math.sin(math.radians(x)))
+		res = OpsMath.__sin_degrees.get(x_chk, decimal_cast(math.sin(OpsMath.radians(x, as_decimal=True))))
+		return res if(as_decimal) else float(res)
 	
 	@staticmethod
-	def tan(x):
+	@precise_method
+	def tan(x, as_decimal=False):
 		"""
 		Return the tangent of x (measured in degrees).
 		"""
 		x_chk = abs(x % 360)
-		return OpsMath.__tan_degrees.get(x_chk,  math.tan(math.radians(x)))
+		res = OpsMath.__tan_degrees.get(x_chk, decimal_cast(math.tan(OpsMath.radians(x, as_decimal=True))))
+		return res if(as_decimal) else float(res)
+	
+	@staticmethod
+	@precise_method
+	def hypot(x, y, as_decimal=False):
+		"""
+		Return the Euclidean distance, sqrt(x*x + y*y).
+		"""
+		dx = decimal_cast(x)
+		dy = decimal_cast(y)
+		res = Decimal(dx**2 + dy**2).sqrt()
+		return res if(as_decimal) else float(res)
 
 	@staticmethod
-	def inv_hypot_y(hypot_l, angle):
+	@precise_method
+	def inv_hypot_y(hypot_l, angle, as_decimal=False):
 		"""
 		Return Y projection given a hypotenuse and an angle.
 		"""
-		return hypot_l * OpsMath.sin(angle)
+		res = decimal_cast(hypot_l) * OpsMath.sin(angle, as_decimal)
+		return res if(as_decimal) else float(res)
 		
 	@staticmethod
-	def inv_hypot_x(hypot_l, angle):
+	@precise_method
+	def inv_hypot_x(hypot_l, angle, as_decimal=False):
 		"""
 		Return X projection given a hypotenuse and an angle.
 		"""
-		return hypot_l * OpsMath.cos(angle)
+		res = decimal_cast(hypot_l) * OpsMath.cos(angle, as_decimal)
+		return res if(as_decimal) else float(res)
 	
 	@staticmethod
-	def inv_hypot(hypot_l, angle):
+	@precise_method
+	def inv_hypot(hypot_l, angle, as_decimal=False):
 		"""
 		Return X, Y projection given a hypotenuse and an angle.
 		"""
-		return (hypot_l * OpsMath.cos(angle), hypot_l * OpsMath.sin(angle))
+		return (OpsMath.inv_hypot_x(hypot_l, angle, as_decimal), OpsMath.inv_hypot_y(hypot_l, angle, as_decimal))
 	
 	@staticmethod
-	def sqrt(x):
-		return float(Decimal(str(x)).sqrt())
+	@precise_method
+	def sqrt(x, as_decimal=False):
+		"""
+		Return the square root of x.
+		"""
+		res = decimal_cast(x).sqrt()
+		return res if(as_decimal) else float(res)
 	
 	@staticmethod
-	def pow(x, y):
-		return float(Decimal(str(x)) ** Decimal(str(y)))
+	@precise_method
+	def pow(x, y, as_decimal=False):
+		"""
+		Return x**y (x to the power of y).
+		"""
+		res = decimal_cast(x) ** decimal_cast(y)
+		return res if(as_decimal) else float(res)
 	
 	@staticmethod
-	def bisector_angle(a1, a2):
+	@precise_method
+	def bisector_angle(a1, a2, as_decimal=False):
 		"""
 		Return angle between two given angles.
 		"""
-		return (abs(a1 % 360) + abs(a2 % 360))/2
+		res = (decimal_cast(abs(a1 % 360)) + decimal_cast(abs(a2 % 360)))/Decimal(2)
+		return res if(as_decimal) else float(res)
 		
+	@staticmethod
+	@precise_method
+	def degrees(radians, as_decimal=False):
+		"""
+		Convert angle x from radians to degrees.
+		"""
+		res = (decimal_cast(radians)/OpsMath.tau) * Decimal(360)
+		return res if(as_decimal) else float(res)
+	
+	@staticmethod
+	@precise_method
+	def radians(degrees, as_decimal=False):
+		"""
+		Convert angle x from degrees to radians.
+		"""
+		res = (decimal_cast(degrees)/Decimal(360)) * OpsMath.tau
+		return res if(as_decimal) else float(res)
+	
+	@staticmethod
+	def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+		"""
+		Determine whether two floating point numbers are close in value.
+		
+		  rel_tol
+			maximum difference for being considered "close", relative to the
+			magnitude of the input values
+		  abs_tol
+			maximum difference for being considered "close", regardless of the
+			magnitude of the input values
+		
+		Return True if a is close in value to b, and False otherwise.
+		
+		For the values to be considered close, the difference between them
+		must be smaller than at least one of the tolerances.
+		
+		-inf, inf and NaN behave similarly to the IEEE 754 Standard.  That
+		is, NaN is not close to anything, even itself.  inf and -inf are
+		only close to themselves.
+		"""
+		return math.isclose(float(a), float(b))
+			
 	
 	# @staticmethod
 	# def intersect_2lines(p1, a1, p2, a2):
@@ -316,8 +440,6 @@ class OpsMath:
 
 	cosh = math.cosh
 
-	degrees = math.degrees
-
 	erf = math.erf
 
 	exp = math.exp
@@ -340,10 +462,6 @@ class OpsMath:
 
 	gcd = math.gcd
 
-	hypot = math.hypot
-
-	isclose = math.isclose
-
 	isfinite = math.isfinite
 	 
 	isinf = math.isinf
@@ -364,8 +482,6 @@ class OpsMath:
 	 
 	modf = math.modf
 	 
-	radians = math.radians
-	 
 	remainder = math.remainder
 
 	sinh = math.sinh
@@ -376,11 +492,11 @@ class OpsMath:
 
 	# Constants
 
-	e = math.e
-	inf = math.inf
-	nan = math.nan
-	pi = math.pi
-	tau = math.tau
+	e = Decimal("2.718281828459045235360287471352662497757247093699")
+	inf = Decimal(math.inf)
+	nan = Decimal(math.nan)
+	pi = Decimal("3.141592653589793238462643383279502884197169399375")
+	tau = Decimal("3.141592653589793238462643383279502884197169399375")*Decimal(2)
 
  
 class __MathObject(metaclass=ABCMeta):
@@ -528,7 +644,8 @@ class MathVector(__MathObject):
 			self.x = p[0]
 			self.y = p[1]
 			self.z = p[2]
-		
+	
+	@precise_method
 	def module(self, as_decimal=False):
 		"""
 		Return vector module.
@@ -538,6 +655,7 @@ class MathVector(__MathObject):
 		z = Decimal(self.z) ** 2
 		return (x+y+z).sqrt() if (as_decimal) else float((x+y+z).sqrt())
 	
+	@precise_method
 	def set_module(self, module):
 		"""
 		Set module of this vector. Return itself.
@@ -548,6 +666,7 @@ class MathVector(__MathObject):
 		self.z = float((Decimal(self.z)/self_l) * Decimal(module))
 		return self
 	
+	@precise_method
 	def unit_vector(self):
 		"""
 		Return vector with module of 1. If vector's module is 0, return None.
@@ -579,26 +698,29 @@ class MathVector(__MathObject):
 		"""
 		return MathVector([0, self.y, self.z])
 	
+	@precise_method
 	def dot(self, other, as_decimal=False):
 		"""
 		Return dot product (Scalar) of this vector and another.
 		"""
 		p = Validator.validate_point(other)
-		v = Decimal(self.x) * Decimal(p[0])
-		v += Decimal(self.y) * Decimal(p[1])
-		v += Decimal(self.z) * Decimal(p[2])
+		v = decimal_cast(self.x) * decimal_cast(p[0])
+		v += decimal_cast(self.y) * decimal_cast(p[1])
+		v += decimal_cast(self.z) * decimal_cast(p[2])
+		v = decimal_aproximate(v)
 		
 		return v if(as_decimal) else float(v)
 	
+	@precise_method
 	def vectorial(self, other):
 		"""
 		Return vectorial product of this vector and another.
 		"""
 		p = Validator.validate_point(other)
 		
-		i = float(Decimal(self.y)*Decimal(p[2]) - Decimal(self.z)*Decimal(p[1]))
-		j = float(Decimal(self.x)*Decimal(p[2]) - Decimal(self.z)*Decimal(p[0]))
-		k = float(Decimal(self.x)*Decimal(p[1]) - Decimal(self.y)*Decimal(p[0]))
+		i = decimal_aproximate(decimal_cast(self.y)*decimal_cast(p[2]) - decimal_cast(self.z)*decimal_cast(p[1]))
+		j = decimal_aproximate(decimal_cast(self.x)*decimal_cast(p[2]) - decimal_cast(self.z)*decimal_cast(p[0]))
+		k = decimal_aproximate(decimal_cast(self.x)*decimal_cast(p[1]) - decimal_cast(self.y)*decimal_cast(p[0]))
 		
 		return MathVector([i,j,k])
 	
@@ -647,7 +769,8 @@ class MathVector(__MathObject):
 		else:
 			return 0
 	
-	def angle(self, other=[1,0,0]):
+	@precise_method
+	def angle(self, other=[1,0,0], as_decimal=False):
 		"""
 		Return the angle between this vector and another.
 		Other vector can be blank, this will return the angle between this vector and [1,0,0]
@@ -657,45 +780,48 @@ class MathVector(__MathObject):
 		self_l = self.module(as_decimal = True)
 		other_l = MathVector(other).module(as_decimal = True)
 		if(self_l != 0 and other_l != 0):
-			return OpsMath.acos(dot_p/(self_l*other_l))
+			return OpsMath.acos(dot_p/(self_l*other_l), as_decimal=as_decimal)
 		else:
 			return None
 	
-	def xy_angle(self, other=[1,0,0]):
+	@precise_method
+	def xy_angle(self, other=[1,0,0], as_decimal=False):
 		"""
 		Return the angle between this vector and another on XY plane.
 		Other vector can be blank, this will return the angle between this vector and [1,0,0]
 		"""
 		v1 = self.xy_projection()
 		v2 = MathVector(other).xy_projection()
-		a1 = OpsMath.atan2(v1.y, v1.x)
-		a2 = OpsMath.atan2(v2.y, v2.x)
-		
-		return (a1-a2)%360
-		
-	def xz_angle(self, other=[1,0,0]):
+		a1 = OpsMath.atan2(v1.y, v1.x, as_decimal=True)
+		a2 = OpsMath.atan2(v2.y, v2.x, as_decimal=True)
+		res = (a1-a2)%360
+		return res if(as_decimal) else float(res)
+	
+	@precise_method
+	def xz_angle(self, other=[1,0,0], as_decimal=False):
 		"""
 		Return the angle between this vector and another on XZ plane.
 		Other vector can be blank, this will return the angle between this vector and [1,0,0]
 		"""
 		v1 = self.xz_projection()
 		v2 = MathVector(other).xz_projection()
-		a1 = OpsMath.atan2(v1.z, v1.x)
-		a2 = OpsMath.atan2(v2.z, v2.x)
-		
-		return (a1-a2)%360
-		
-	def yz_angle(self, other=[0,1,0]):
+		a1 = OpsMath.atan2(v1.z, v1.x, as_decimal=True)
+		a2 = OpsMath.atan2(v2.z, v2.x, as_decimal=True)
+		res = (a1-a2)%360
+		return res if(as_decimal) else float(res)
+	
+	@precise_method
+	def yz_angle(self, other=[0,1,0], as_decimal=False):
 		"""
 		Return the angle between this vector and another on YZ plane.
 		Other vector can be blank, this will return the angle between this vector and [0,1,0]
 		"""
 		v1 = self.yz_projection()
 		v2 = MathVector(other).yz_projection()
-		a1 = OpsMath.atan2(v1.z, v1.y)
-		a2 = OpsMath.atan2(v2.z, v2.y)
-		
-		return (a1-a2)%360
+		a1 = OpsMath.atan2(v1.z, v1.y, as_decimal=True)
+		a2 = OpsMath.atan2(v2.z, v2.y, as_decimal=True)
+		res = (a1-a2)%360
+		return res if(as_decimal) else float(res)
 	
 	def xy_normal(self, anticlock_wise=True):
 		"""
@@ -778,37 +904,40 @@ class MathVector(__MathObject):
 	def rotate(self, rotation=[0,0,0]):
 		r = Validator.validate_rotation(rotation)
 		return self.x_rotate(r[0]).y_rotate(r[1]).z_rotate(r[2])
-		
+	
+	@precise_method
 	def x_rotate(self, angle=0):
 		rot = Validator.validate_angle(angle)
 		if(rot!=0):
-			y = (self.y * OpsMath.cos(rot)) - (self.z * OpsMath.sin(rot))
-			z = (self.y * OpsMath.sin(rot)) + (self.z * OpsMath.cos(rot))
+			y = (decimal_cast(self.y) * OpsMath.cos(rot, as_decimal=True)) - (decimal_cast(self.z) * OpsMath.sin(rot, as_decimal=True))
+			z = (decimal_cast(self.y) * OpsMath.sin(rot, as_decimal=True)) + (decimal_cast(self.z) * OpsMath.cos(rot, as_decimal=True))
 			
-			self.y = y
-			self.z = z
+			self.y = float(y)
+			self.z = float(z)
 			
 		return self
-		
+	
+	@precise_method
 	def y_rotate(self, angle=0):
 		rot = Validator.validate_angle(angle)
 		if(rot!=0):
-			x = (self.x * OpsMath.cos(rot)) + (self.z * OpsMath.sin(rot))
-			z = (-1 * self.x * OpsMath.sin(rot)) + (self.z * OpsMath.cos(rot))
+			x = (decimal_cast(self.x) * OpsMath.cos(rot, as_decimal=True)) + (decimal_cast(self.z) * OpsMath.sin(rot, as_decimal=True))
+			z = (Decimal(-1) * decimal_cast(self.x) * OpsMath.sin(rot, as_decimal=True)) + (decimal_cast(self.z) * OpsMath.cos(rot, as_decimal=True))
 			
-			self.x = x
-			self.z = z
+			self.y = float(y)
+			self.z = float(z)
 			
 		return self
-		
+	
+	@precise_method
 	def z_rotate(self, angle=0):
 		rot = Validator.validate_angle(angle)
 		if(rot!=0):
-			x = (self.x * OpsMath.cos(rot)) - (self.y * OpsMath.sin(rot))
-			y = (self.x * OpsMath.sin(rot)) + (self.y * OpsMath.cos(rot))
+			x = (decimal_cast(self.x) * OpsMath.cos(rot, as_decimal=True)) - (decimal_cast(self.y) * OpsMath.sin(rot, as_decimal=True))
+			y = (decimal_cast(self.x) * OpsMath.sin(rot, as_decimal=True)) + (decimal_cast(self.y) * OpsMath.cos(rot, as_decimal=True))
 			
-			self.x = x
-			self.y = y
+			self.y = float(y)
+			self.z = float(z)
 			
 		return self
 		
@@ -960,6 +1089,7 @@ class MathLine(__MathPolynomial):
 	def origin(self, value):
 		self._origin = MathPoint(value)
 	
+	@precise_method
 	def at_x(self, x_coord):
 		"""
 		Return point at given X coordinate.
@@ -972,9 +1102,10 @@ class MathLine(__MathPolynomial):
 		if(self._vector.x == 0):
 			return None
 		
-		coord_diff = (x_coord - self._origin.x) / self._vector.x
+		coord_diff = decimal_cast(x_coord - self._origin.x) / decimal_cast(self._vector.x)
 		return self._origin + (coord_diff * self._vector)
-		
+	
+	@precise_method
 	def at_y(self, y_coord):
 		"""
 		Return point at given Y coordinate.
@@ -986,9 +1117,11 @@ class MathLine(__MathPolynomial):
 		
 		if(self._vector.y == 0):
 			return None
-		coord_diff = (y_coord - self._origin.y) / self._vector.y
+			
+		coord_diff = decimal_cast(y_coord - self._origin.y) / decimal_cast(self._vector.y)
 		return self._origin + (coord_diff * self._vector)
-		
+	
+	@precise_method	
 	def at_z(self, z_coord):
 		"""
 		Return point at given Z coordinate.
@@ -1000,7 +1133,8 @@ class MathLine(__MathPolynomial):
 		
 		if(self._vector.z == 0):
 			return None
-		coord_diff = (z_coord - self._origin.z) / self._vector.z
+			
+		coord_diff = decimal_cast(z_coord - self._origin.z) / decimal_cast(self._vector.z)
 		return self._origin + (coord_diff * self._vector)
 	
 	def has_point(self, point):
@@ -1039,23 +1173,23 @@ class MathLine(__MathPolynomial):
 		"""
 		return MathLine(origin=[0, self._origin.y, self._origin.z], vector = self._vector.yz_projection())
 	
-	def xy_slope(self):
+	def xy_slope(self, as_decimal=False):
 		"""
 		Return the slope of this line in XY plane.
 		"""
-		return OpsMath.tan(self._vector.xy_angle())
+		return OpsMath.tan(self._vector.xy_angle(as_decimal=True), as_decimal=as_decimal)
 		
-	def xz_slope(self):
+	def xz_slope(self, as_decimal=False):
 		"""
 		Return the slope of this line in XZ plane.
 		"""
-		return OpsMath.tan(self._vector.xz_angle())
+		return OpsMath.tan(self._vector.xz_angle(as_decimal=True), as_decimal=as_decimal)
 		
-	def yz_slope(self):
+	def yz_slope(self, as_decimal=False):
 		"""
 		Return the slope of this line in YZ plane.
 		"""
-		return OpsMath.tan(self._vector.yz_angle())
+		return OpsMath.tan(self._vector.yz_angle(as_decimal=True), as_decimal=as_decimal)
 	
 	def are_parallel(self, line):
 		"""
@@ -1080,11 +1214,11 @@ class MathLine(__MathPolynomial):
 		self.check_class(line)
 		return self.intersection_point(line) is not None
 	
-	def are_crossed(self, line):
+	def are_skewed(self, line):
 		"""
-		Return True if this line and another cross each other.
+		Return True if this line and another skew each other.
 		"""
-		return not self.are_parallel(line)
+		return not self.are_parallel(line) and not self.are_secant(line)
 	
 	def are_oblique(self, line):
 		"""
@@ -1111,158 +1245,170 @@ class MathLine(__MathPolynomial):
 		#self.check_class(line) # Checked in are_orthogonal
 		return self.are_orthogonal(line) and self.are_secant(line)
 	
-	def crossing_point(self, other):
+	@precise_method
+	def skew_point(self, other):
 		"""
-		Return crossing point (shortest distance) between this line and another line or point.
-		Crossing point is contained in this line. If lines are coincident, return origin.
+		Return skew point (shortest distance) between this line and another line or point.
+		Skew point is always contained on this line.
+		
+		Point -> Skew Point
+		Coincident -> Origin Point
+		Parallel -> Origin Point
+		Secant -> Intersection Point
+		Skewed -> Skew Point
 		"""
 		if(isinstance(other, MathPoint)):
 			p_vector = MathVector.from_points(self._origin, other)
-			angle = p_vector.angle(self._vector)
-			hypot = p_vector.module(as_decimal=True)
-			factor = hypot * Decimal(OpsMath.cos(angle))
+			angle = decimal_aproximate(p_vector.angle(self._vector, as_decimal=True))
+			hypot = decimal_aproximate(p_vector.module(as_decimal=True))
+			factor = decimal_aproximate(hypot * OpsMath.cos(angle, as_decimal=True))
 			return self._origin + (factor * self._vector)
 			
 		elif(isinstance(other, MathLine)):
-			intersection_p = self.intersection_point(other)
-			if(intersection_point is not None):
-				return intersection_point
-			else:
-				pass
-				# TODO hallar punto de cruce
-				# https://www.thefinitelement.com/28-geometria-analitica/179-ejercicio-resuelto-19-distancia-entre-dos-rectas-en-r3
-				# https://www.vadenumeros.es/segundo/posiciones-rectas-espacio.htm
-				# https://www.vadenumeros.es/segundo/distancias-en-el-espacio.htm 
-			
+			# https://en.wikipedia.org/wiki/Skew_lines
+			rs_vector = MathVector.from_points(self._origin, other.origin)
+			n2 = other.vector.vectorial(self._vector.vectorial(other.vector))
+			num_r = rs_vector.dot(n2, as_decimal=True)
+			den_r = self._vector.dot(n2, as_decimal=True)
+			return self._origin + (num_r/den_r)*self._vector
+		
+		else:
+			raise TypeError(str(type(other)) + " is not a MathPoint or a MathLine object") 
 	
+	@precise_method
 	def intersection_point(self, line):
 		"""
 		Return intersection point between this line and another if exists, else return None.
 		"""
 		self.check_class(line)
+		breakpoint()
+		# If other line also contains skew_point, it has an intersection
+		skew_point = self.skew_point(line)
+		return skew_point if(line.has_point(skew_point)) else None
 		
 		
-		#Check if origin is contained in lines
-		if(self.has_point(line.origin)):
-			return MathPoint(line.origin)
-		elif(line.has_point(self.origin)):
-			return MathPoint(self.origin)
-		#Check if parallel (No intersection, if equal lines, origin was returned)
-		elif(self.are_parallel(line)):
-			return None
+		# #Check if origin is contained in lines
+		# if(self.has_point(line.origin)):
+			# return MathPoint(line.origin)
+		# elif(line.has_point(self.origin)):
+			# return MathPoint(self.origin)
+		# #Check if parallel (No intersection, if equal lines, origin was returned)
+		# elif(self.are_parallel(line)):
+			# return None
 		
 		
-		#Simplify intersecting problem R3 -> R2, 3 times, one for every projection
+		# #Simplify intersecting problem R3 -> R2, 3 times, one for every projection
 		
-		### Projection on XY, find intersection
-		xy_proj_self = self.xy_projection()
-		a = xy_proj_self.xy_slope()
-		c = xy_proj_self.at_x(0)
-		c = c.y if(c is not None) else None
-		xy_proj_line = line.xy_projection()
-		b = xy_proj_line.xy_slope()
-		d = xy_proj_line.at_x(0)
-		d = d.y if(d is not None) else None
+		# ### Projection on XY, find intersection
+		# xy_proj_self = self.xy_projection()
+		# a = xy_proj_self.xy_slope()
+		# c = xy_proj_self.at_x(0)
+		# c = c.y if(c is not None) else None
+		# xy_proj_line = line.xy_projection()
+		# b = xy_proj_line.xy_slope()
+		# d = xy_proj_line.at_x(0)
+		# d = d.y if(d is not None) else None
 		
 		
-		if(None not in [c,d]):
-			try:
-				x_value = (d-c)/(a-b)
-				p = line.at_x(x_value)
+		# if(None not in [c,d]):
+			# try:
+				# x_value = (d-c)/(a-b)
+				# p = line.at_x(x_value)
 				
-				if(p is not None and self.has_point(p)):
-					return p
-			except:
-				#Ignore division by 0 exceptions, etc...
-				pass
+				# if(p is not None and self.has_point(p)):
+					# return p
+			# except:
+				# #Ignore division by 0 exceptions, etc...
+				# pass
 		
-		# Slope of XY projection of self is inf (vertical line)
-		if(OpsMath.isinf(a)):
-			x_coord_proj_self = xy_proj_self.origin.x
-			p = line.at_x(x_coord_proj_self)
-			if(p is not None and self.has_point(p)):
-					return p
-		# Slope of XY projection of line is inf (vertical line)
-		if(OpsMath.isinf(b)):
-			x_coord_proj_line = xy_proj_line.origin.x
-			p = self.at_x(x_coord_proj_line)
-			if(p is not None and line.has_point(p)):
-					return p
+		# # Slope of XY projection of self is inf (vertical line)
+		# if(OpsMath.isinf(a)):
+			# x_coord_proj_self = xy_proj_self.origin.x
+			# p = line.at_x(x_coord_proj_self)
+			# if(p is not None and self.has_point(p)):
+					# return p
+		# # Slope of XY projection of line is inf (vertical line)
+		# if(OpsMath.isinf(b)):
+			# x_coord_proj_line = xy_proj_line.origin.x
+			# p = self.at_x(x_coord_proj_line)
+			# if(p is not None and line.has_point(p)):
+					# return p
 			
 			
-		### Projection on XZ, find intersection
-		xz_proj_self = self.xz_projection()
-		a = xz_proj_self.xz_slope()
-		c = xz_proj_self.at_x(0)
-		c = c.z if(c is not None) else None
+		# ### Projection on XZ, find intersection
+		# xz_proj_self = self.xz_projection()
+		# a = xz_proj_self.xz_slope()
+		# c = xz_proj_self.at_x(0)
+		# c = c.z if(c is not None) else None
 		
-		xz_proj_line = line.xz_projection()
-		b = xz_proj_line.xz_slope()
-		d = xz_proj_line.at_x(0)
-		d = d.z if(d is not None) else None
+		# xz_proj_line = line.xz_projection()
+		# b = xz_proj_line.xz_slope()
+		# d = xz_proj_line.at_x(0)
+		# d = d.z if(d is not None) else None
 		
-		if(None not in [c,d]):
-			try:
-				x_value = (d-c)/(a-b)
-				p = line.at_x(x_value)
+		# if(None not in [c,d]):
+			# try:
+				# x_value = (d-c)/(a-b)
+				# p = line.at_x(x_value)
 				
-				if(p is not None and self.has_point(p)):
-					return p
-			except:
-				#Ignore division by 0 exceptions, etc...
-				pass
+				# if(p is not None and self.has_point(p)):
+					# return p
+			# except:
+				# #Ignore division by 0 exceptions, etc...
+				# pass
 			
-		# Slope of XZ projection of self is inf (vertical line)
-		if(OpsMath.isinf(a)):
-			x_coord_proj_self = xz_proj_self.origin.x
-			p = line.at_x(x_coord_proj_self)
-			if(p is not None and self.has_point(p)):
-					return p
-		# Slope of XZ projection of line is inf (vertical line)
-		if(OpsMath.isinf(b)):
-			x_coord_proj_line = xz_proj_line.origin.x
-			p = self.at_x(x_coord_proj_line)
-			if(p is not None and line.has_point(p)):
-					return p
+		# # Slope of XZ projection of self is inf (vertical line)
+		# if(OpsMath.isinf(a)):
+			# x_coord_proj_self = xz_proj_self.origin.x
+			# p = line.at_x(x_coord_proj_self)
+			# if(p is not None and self.has_point(p)):
+					# return p
+		# # Slope of XZ projection of line is inf (vertical line)
+		# if(OpsMath.isinf(b)):
+			# x_coord_proj_line = xz_proj_line.origin.x
+			# p = self.at_x(x_coord_proj_line)
+			# if(p is not None and line.has_point(p)):
+					# return p
 			
-		# Projection on YZ, find intersection
-		yz_proj_self = self.yz_projection()
-		a = yz_proj_self.yz_slope()
-		c = yz_proj_self.at_y(0)
-		c = c.z if(c is not None) else None
+		# # Projection on YZ, find intersection
+		# yz_proj_self = self.yz_projection()
+		# a = yz_proj_self.yz_slope()
+		# c = yz_proj_self.at_y(0)
+		# c = c.z if(c is not None) else None
 		
-		yz_proj_line = line.yz_projection()
-		b = yz_proj_line.yz_slope()
-		d = xz_proj_line.at_y(0)
-		d = d.z if(d is not None) else None
+		# yz_proj_line = line.yz_projection()
+		# b = yz_proj_line.yz_slope()
+		# d = xz_proj_line.at_y(0)
+		# d = d.z if(d is not None) else None
 		
-		if(None not in [c,d]):
-			try:
-				y_value = (d-c)/(a-b)
-				p = line.at_y(y_value)
+		# if(None not in [c,d]):
+			# try:
+				# y_value = (d-c)/(a-b)
+				# p = line.at_y(y_value)
 				
-				if(p is not None and self.has_point(p)):
-					return p
-			except:
-				#Ignore division by 0 exceptions, etc...
-				pass
+				# if(p is not None and self.has_point(p)):
+					# return p
+			# except:
+				# #Ignore division by 0 exceptions, etc...
+				# pass
 				
-		# Slope of YZ projection of self is inf (vertical line)
-		if(OpsMath.isinf(a)):
-			y_coord_proj_self = yz_proj_self.origin.y
-			p = line.at_y(y_coord_proj_self)
-			if(p is not None and self.has_point(p)):
-					return p
-		# Slope of YZ projection of line is inf (vertical line)
-		if(OpsMath.isinf(b)):
-			y_coord_proj_line = yz_proj_line.origin.y
-			p = self.at_y(y_coord_proj_line)
-			if(p is not None and line.has_point(p)):
-					return p	
+		# # Slope of YZ projection of self is inf (vertical line)
+		# if(OpsMath.isinf(a)):
+			# y_coord_proj_self = yz_proj_self.origin.y
+			# p = line.at_y(y_coord_proj_self)
+			# if(p is not None and self.has_point(p)):
+					# return p
+		# # Slope of YZ projection of line is inf (vertical line)
+		# if(OpsMath.isinf(b)):
+			# y_coord_proj_line = yz_proj_line.origin.y
+			# p = self.at_y(y_coord_proj_line)
+			# if(p is not None and line.has_point(p)):
+					# return p	
 		
-		# No intersection found, return None
+		# # No intersection found, return None
 		return None
 	
+	@precise_method
 	def distance(self, other):
 		"""
 		Return distance between this line and another line or point.
@@ -1296,6 +1442,7 @@ class MathLine(__MathPolynomial):
 		else:
 			raise TypeError("Class", type(other),"is not an instance of MathLine or MathPoint") 
 	
+	@precise_method
 	def get_points(self, from_x=None, to_x=None, from_y=None, to_y=None, from_z=None, to_z=None, num=2):
 		"""
 		Return a list of points defined by constraints:

@@ -17,7 +17,6 @@ class Custom2dShapes:
 		res = ops.Polygon(points)
 		return res if(offset == 0) else res.rotate([0,0,offset])
 
-	# Rehacerlo
 	@staticmethod
 	def star(num, r_out, r_in, offset=0):
 		"""

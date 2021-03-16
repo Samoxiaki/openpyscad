@@ -68,3 +68,5 @@ target/
 cover/ 
 example_module.scad
 sandbox
+
+tests/
